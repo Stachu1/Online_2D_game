@@ -1,6 +1,6 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import sys, threading, pygame, random, socket, math, time, pickle, pyautogui
+import sys, threading, pygame, socket, math, time, pickle
 
 
 class Game:
@@ -13,10 +13,12 @@ class Game:
 
         self.movement_speed = 5
         self.bulltet_speed = 10
-        self.shot_d = 15
+        self.shot_d = 5
         self.max_packet_r_size = 4096
         self.max_packet_t_size = 1024
         
+        self.hits = 0
+
 
         pygame.init()
         self.clock = pygame.time.Clock()
@@ -160,7 +162,7 @@ class Game:
         return ping_text
     
     def update_packet_size(self):
-        ping_text = self.font.render(f"Packets size: transmit: {self.packet_t_size}/{self.max_packet_t_size} receive: {self.packet_r_size}/{self.max_packet_r_size}", 1, pygame.Color("white"))
+        ping_text = self.font.render(f"Transmit: {self.packet_t_size}/{self.max_packet_t_size} receive: {self.packet_r_size}/{self.max_packet_r_size}", 1, pygame.Color("white"))
         return ping_text
 
 
@@ -178,7 +180,7 @@ class Game:
 
 
     def blit_player(self):
-        pygame.draw.circle(self.screen, self.player.color, (self.player.x, self.player.y), self.player_size, self.player_size)
+        pygame.draw.circle(self.screen, self.player.color, (self.player.x, self.player.y), self.player_size)
         return True
 
 
@@ -208,7 +210,7 @@ class Game:
 
     def blit_own_bullets(self):
         for bullet in self.bullets:
-            pygame.draw.circle(self.screen, bullet.color, (bullet.x, bullet.y), self.bullet_size, self.bullet_size)
+            pygame.draw.circle(self.screen, bullet.color, (bullet.x, bullet.y), self.bullet_size)
 
 
     def updata_own_bullets(self):
@@ -218,11 +220,18 @@ class Game:
             if bullet.x < 0 or bullet.x > self.screen.get_width() or bullet.y < 0 or bullet.y > self.screen.get_height():
                 self.bullets.remove(bullet)
 
+            for p in self.reply:
+                if p["id"] != self.player.id:
+                    if math.sqrt((p["x"] - bullet.x) ** 2 + (p["y"] - bullet.y) ** 2) < 18:
+                        self.bullets.remove(bullet)
+                        self.hits += 1
+                        print(f"\r\33[2KHits: {self.hits} ", end="")
+
 
     def blit_players(self):
         for p in self.reply:
             if p["id"] != self.player.id:
-                pygame.draw.circle(self.screen, p["c"], (p["x"], p["y"]), self.player_size, self.player_size)
+                pygame.draw.circle(self.screen, p["c"], (p["x"], p["y"]), self.player_size)
         return True
 
 
@@ -230,7 +239,7 @@ class Game:
         for p in self.reply:
             if p["id"] != self.player.id:
                 for b in p["b"]:
-                    pygame.draw.circle(self.screen, p["c"], (b[0], b[1]), self.bullet_size, self.bullet_size)
+                    pygame.draw.circle(self.screen, p["c"], (b[0], b[1]), self.bullet_size)
         return True
     
     

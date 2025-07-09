@@ -1,4 +1,4 @@
-import socket, sys, random, time, threading, pickle
+import socket, random, threading, pickle
 from datetime import datetime
 
 
@@ -8,6 +8,7 @@ class Player:
         self.x = x
         self.y = y
         self.color = color
+        self.hits = 0
 
     def encode_identity(self):
         identity = f"{self.id};{self.x};{self.y};{self.color}"
@@ -35,8 +36,6 @@ def threaded_client(conn, player):
                 break
             else:
                 msg = pickle.loads(data)
-                # print(data)
-                # print(sys.getsizeof(data))
 
 
                 for p in players:   # * Move player
@@ -49,8 +48,6 @@ def threaded_client(conn, player):
                     if bullet.player_id == msg["id"]:
                         bullets.remove(bullet)
 
-                # bullets_data = msg.split(";")
-                # bullets_data.pop(0)
 
                 color = msg["c"]
                 for bullet_data in msg["b"]:    # * Create player bullets
@@ -76,11 +73,11 @@ def threaded_client(conn, player):
         except Exception as e:
             print(e)
             break
-    print(datetime.today().strftime('%Y-%m-%d-%H:%M:%S'), " Connection Closed id:", player.id, )
+    print(f"\33[31mConnection Closed Player ID: {player.id} \33[0m")
     for p in players:       # * Remove player
         if p.id == player.id:
             players.remove(p)
-    for b in bullets:       # * Rmove bullet
+    for b in bullets:       # * Remove bullet
         if b.player_id == player.id:
             bullets.remove(b)
     conn.close()
@@ -122,12 +119,12 @@ bullets = []
 
 while True:     # * Main loop for accepting connections
     conn, addr = s.accept()
-    print("Connected to:", addr)
+    print(f"\33[32mConnected to: {addr}", end=" ")
 
     currentId = currentId + 1
     player = Player(currentId, random.randrange(100, 1000), random.randrange(100,500), (random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)))
     players.append(player)
 
-    print("Created player, id:", currentId, datetime.today().strftime('%Y-%m-%d-%H:%M:%S'))
+    print(f"Player ID: {currentId}\33[0m")
 
     threading.Thread(target=threaded_client, args=(conn, player,)).start()
